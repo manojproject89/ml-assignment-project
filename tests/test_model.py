@@ -1,7 +1,7 @@
 import numpy as np
 from src.model import train_model, evaluate_model
 from sklearn.ensemble import RandomForestClassifier
-
+# Test Model
 def test_train_and_evaluate_model():
     # Generate dummy data with the correct number of features (31 in this case)
     X_train = np.random.rand(100, 31)  # 31 features
