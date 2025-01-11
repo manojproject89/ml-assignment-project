@@ -11,7 +11,7 @@ def load_data(file_path):
 
 def preprocess_data(data):
     """Preprocess the data by splitting into features  target and scaling."""
-    X = data.drop(columns=['target'])
+    X = data.drop([data.columns[0], data.columns[-1]], axis=1)
     y = data['target']
     # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
