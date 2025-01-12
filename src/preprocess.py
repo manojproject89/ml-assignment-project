@@ -1,25 +1,33 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from tensorflow import keras
 
 
-def load_data(file_path):
-    """Load the wine quality dataset."""
-    data = pd.read_csv(file_path, sep=',')
-    return data
 
+def pre_process_data(data_path, input_shape: tuple, batch_size: int):
+    train_dataset = keras.preprocessing.image_dataset_from_directory(
+        data_path,
+        validation_split=0.2,
+        subset="training",
+        seed=1337,
+        image_size=input_shape[:2],
+        batch_size=batch_size,
+    )
 
-def preprocess_data(data):
-    """Preprocess the data by splitting into features  target and scaling."""
-    X = data.drop([data.columns[0], data.columns[-1]], axis=1)
-    y = data['target']
-    # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
-                                                        random_state=42)
+    val_dataset = keras.preprocessing.image_dataset_from_directory(
+        data_path,
+        validation_split=0.2,
+        subset="validation",
+        seed=420,
+        image_size=input_shape[:2],
+        batch_size=batch_size,
+    )
 
-    # Standard scaling
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
+    data_augmentation = keras.Sequential(
+        [
+            keras.layers.RandomFlip("horizontal"),
+            keras.layers.RandomRotation(0.1),
+        ]
+    )
 
-    return X_train, X_test, y_train, y_test, scaler
+    augmented_train_dataset = train_dataset.map(
+        lambda x, y: (data_augmentation(x, training=True), y))
+    return augmented_train_dataset, val_dataset
