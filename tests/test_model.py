@@ -1,20 +1,35 @@
-import numpy as np
-from src.model import train_model, evaluate_model
-from sklearn.ensemble import RandomForestClassifier
+import os
+import pytest
+import tensorflow as tf
+from tensorflow import keras
+from src.preprocess import pre_process_data
+from src.model import model_instantiate
+from src.train import train_model
+from src.inference import model_predict, model_evaluate
+from datetime import datetime
+# Test Model
+# @pytest
+@pytest.mark.parametrize(
+    "model_name, data_path, input_shape, learning_rate, num_epochs, batch_size",
+    [
+        # ["./data/cats_dogs/", (224, 224, 3), 0.01,  50, 32],
+        # ["custom_net", "./data/cats_dogs/", (224, 224, 3), 0.01,  10, 32],
+        # ["mobilenet", "./data/cats_dogs/", (224, 224, 3), 0.01,  10, 32],
+        ["mobilenetv2", "./data/cats_dogs/", (224, 224, 3), 0.01,  10, 32],
+    ],
+)
+def test_train_and_evaluate_model(model_name, data_path, input_shape, learning_rate, num_epochs, batch_size):
+    experiment_name = "cat-dog-classifier-mobilenet"
+    run_name = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-def test_train_and_evaluate_model():
-    # Generate dummy data with the correct number of features (31 in this case)
-    X_train = np.random.rand(100, 31)  # 31 features
-    y_train = np.random.randint(0, 2, size=100)
-    X_test = np.random.rand(20, 31)    # 31 features
-    y_test = np.random.randint(0, 2, size=20)
+    train_dataset, val_dataset = pre_process_data(data_path=data_path, input_shape=input_shape, batch_size=batch_size)
 
-    model = train_model(X_train, y_train)
-    accuracy, _ = evaluate_model(model, X_test, y_test)
+    model = model_instantiate(model_string=model_name,input_shape=input_shape, learning_rate=learning_rate)
 
-    # Check if the accuracy is within a reasonable range (between 0 and 1)
-    assert 0 <= accuracy <= 1
+    logdir = os.path.join("logs", experiment_name, run_name)
+    tb_callback = keras.callbacks.TensorBoard(log_dir=logdir, write_graph=True, histogram_freq=1)
 
-    # Additional check to confirm that the trained model is a RandomForestClassifier
-    assert isinstance(model, RandomForestClassifier)
-
+    history = train_model(model, augmented_train_dataset=train_dataset, num_epochs=num_epochs, val_dataset=val_dataset, tb_callback=tb_callback)
+    model_evaluate(val_image_path=val_dataset, model=model)
+    test_img_path = os.path.join(data_path, "cat/cat.4060.jpg")
+    model_predict(test_image_path=test_img_path, input_shape=input_shape, model=model)
