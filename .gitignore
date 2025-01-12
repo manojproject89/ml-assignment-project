@@ -1,0 +1,4 @@
+# Ignore hidden files and directories
+.*
+/src/__pycache__/
+.gitignore
